@@ -4,7 +4,7 @@ Xetra ETL Component
 import logging 
 
 from typing import NamedTuple
-
+import pandas as pd
 from xetra.common.s3 import S3BucketConnector
 
 class XetraSourceConfig(NamedTuple):
@@ -87,7 +87,20 @@ class XetraETL():
         self.meta_update_list = 
         
     def extract(self):
-        pass
+        """
+        Read the source data and concatenates them to one Pandas DataFrame
+        
+        Returns:
+            data_frame (pd.DataFrame): Pandas DataFrame with the extracted data
+        """
+        self._logger.info('Extracting Xetra source files started...')
+        files = [key for date in self.extract_date_list for key in self.s3_bucket_src.list_files_in_prefix(date)]
+        if not files:
+            data_frame = pd.DataFrame()
+        else:
+            data_frame = pd.concat([self.s3_bucket_src.read_csv_to_df(file) for file in files], ignore_index=True)
+        self._logger('Extracting Xetra source files finished')
+        return data_frame
     
     def transform_report1(self):
         pass
