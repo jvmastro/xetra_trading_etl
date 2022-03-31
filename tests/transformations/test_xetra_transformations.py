@@ -7,10 +7,11 @@ from unittest.mock import patch
 import boto3
 import pandas as pd
 from moto import mock_s3
+import xetra
 
 from xetra.common.s3 import S3BucketConnector
 from xetra.common.meta_process import MetaProcess
-from xetra.tranformations.xetra_transformations import XetraETL, XetraSourceConfig, XetraTargetConfig
+from xetra.transformations.xetra_transformations import XetraETL, XetraSourceConfig, XetraTargetConfig
 
 class TestXetraETLMethods(unittest.TestCase):
     """
@@ -140,3 +141,49 @@ class TestXetraETLMethods(unittest.TestCase):
             df_result = xetra_etl.extract()
         # Test after mthod execution
         self.assertTrue(df_exp.equals(df_result))
+    
+    def test_transform_report1_emptydf(self):
+        """
+        Tests the transform_report1 method with an empty DataFrame as an input argument
+        """
+        # Expected results 
+        log_exp = 'This dataframe is empty. No transformations will be applied'
+        # Test init
+        extract_date = '2022-03-17'
+        extract_date_list = ['2022-03-16','2022-03-17','2022-03-18']
+        df_input = pd.DataFrame()
+        # Method execution
+        with patch.object(MetaProcess, 'return_date_list', return_value=[extract_date, extract_date_list]):
+            xetra_etl = XetraETL(self.s3_src_bucket, self.s3_trg_bucket, self.meta_key, self.source_config, self.target_config)
+            with self.assertLogs() as logm:
+                df_result = xetra_etl.transform_report1(df_input)
+                #Log test after method execution
+                self.assertIn(log_exp, logm.output[0])
+        # Test after method execution
+        self.assertTrue(df_result.empty)
+        
+    def test_transform_report1_ok(self):
+        """
+        Tests the transform_report1 method with a DataFrame as an input argument
+        """
+        # Expected results
+        log1_exp = 'Applying transformations to Xetra source data for report 1 started...'
+        log2_exp = 'Applying transformations to Xetra source data finished...'
+        df_exp = self.df_report
+        # Test init
+        extract_date = '2022-03-17'
+        extract_date_list = ['2022-03-16','2022-03-17','2022-03-18','2022-03-19']
+        df_input = self.df_src.loc[1:8].reset_index(drop=True)
+        # Method execution
+        with patch.object(MetaProcess, 'return_date_list', return_value = [extract_date, extract_date_list]):
+            xetra_etl = XetraETL(self.s3_src_bucket, self.s3_trg_bucket, self.meta_key, self.source_config, self.target_config)
+            with self.assertLogs() as logm:
+                df_result = xetra_etl.transform_report1(df_input)
+                # Log test after method execution
+                self.assertIn(log1_exp, logm.output[0])
+                self.assertIn(log2_exp, logm.output[1])
+        # Test after method execution
+        self.assertTrue(df_exp.equals(df_result))
+            
+if __name__ == '__main__':
+    unittest.main()
