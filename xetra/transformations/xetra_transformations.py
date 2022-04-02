@@ -1,10 +1,12 @@
 """ 
 Xetra ETL Component
 """
+from datetime import date, datetime
 import logging 
 
 from typing import NamedTuple
 import pandas as pd
+from xetra.common.meta_process import MetaProcess
 from xetra.common.s3 import S3BucketConnector
 
 class XetraSourceConfig(NamedTuple):
@@ -83,9 +85,8 @@ class XetraETL():
         self.meta_key = meta_key
         self.src_args = src_args
         self.trg_args = trg_args
-        self.extract_date = 
-        self.extract_date_list = 
-        self.meta_update_list = 
+        self.extract_date, self.extract_date_list = MetaProcess.return_date_list(self.src_args.src_first_extract_date, self.meta_key, self.s3_bucket_trg)
+        self.meta_update_list = [date for date in self.extract_date_list if date >= self.extract_date]
         
     def extract(self):
         """
@@ -156,8 +157,26 @@ class XetraETL():
         return data_frame
     
     
-    def load(self):
-        pass
+    def load(self, data_frame: pd.DataFrame):
+        """
+        Saves a Pandas Dataframe to the target
+
+        Params:
+            data_frame (pd.DataFrame): dataframe to load
+        """
+        # Creating target key
+        target_key = (
+            f'{self.trg_args.trg_key}'
+            f'{datetime.today().strftime(self.trg_args.trg_key_date_format)}'
+            f'{self.trg_args.trg_format}'
+        )
+        # Writing to target
+        self.s3_bucket_trg.write_df_to_s3(data_frame, target_key, self.trg_args.trg_format)
+        self._logger.info('Xetra target data sucessfully written')
+        # Updating meta file
+        MetaProcess.update_meta_file(self.meta_update_list, self.meta_key, self.s3_bucket_trg)
+        self._logger.info('Xetra meta file sucessfully updated')
+        return True
     
     def etl_report1(self):
         pass
