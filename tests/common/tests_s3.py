@@ -102,7 +102,7 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
         val2_exp = 'val2'
         log_exp = f'Reading file {self.s3_endpoint_url}/{self.s3_bucket_name}/{key_exp}'
         # Test init
-        csv_content = f'{col1_exp}, {col2_exp}\n{val1_exp},{val2_exp}'
+        csv_content = f'{col1_exp},{col2_exp}\n{val1_exp},{val2_exp}'
         self.s3_bucket.put_object(Body = csv_content, Key=key_exp)
         # Method Execution
         with self.assertLogs() as logm:
@@ -129,10 +129,9 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
         """
         Tests the write_df_to_s3 method with an empty DataFrame as an input
         """
-        
         # Expected Results
         return_exp = None 
-        log_exp = 'The dataframe is empty! No file will be written!'
+        log_exp = 'The dataframe is empty! No such file will be written!'
         # Test Init
         df_empty = pd.DataFrame()
         key = '.csv'
@@ -196,7 +195,7 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
             # log test after method execution
             self.assertIn(log_exp, logm.output[0])
         # Test after method execution
-        data = self.s3_bucket.Object(key=key_exp).get().get('Body').read().decode('utf-8')
+        data = self.s3_bucket.Object(key=key_exp).get().get('Body').read()
         out_buffer = BytesIO(data)
         df_result = pd.read_parquet(out_buffer)
         self.assertEqual(return_exp, result)
@@ -220,7 +219,7 @@ class TestS3BucketConnectorMethods(unittest.TestCase):
         df_exp = pd.DataFrame([['A','B'], ['C','D']], columns = ['col1','col2'])
         key_exp = 'test.parquet'
         format_exp = 'wrong_format'
-        log_exp = f'The file format {format_exp} is not supported to be written to s3!'
+        log_exp = f'The file format {format_exp} is not supported to be written to S3!'
         exception_exp = WrongFormatException
         # Method Execution
         with self.assertLogs() as logm:

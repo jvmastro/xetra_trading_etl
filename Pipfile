@@ -12,6 +12,7 @@ pyyaml = "*"
 pylint = "*"
 moto = "*"
 coverage = "*"
+pandas = "*"
 
 [dev-packages]
 

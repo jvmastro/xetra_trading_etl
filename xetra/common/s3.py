@@ -3,13 +3,13 @@ from io import StringIO, BytesIO
 
 import os
 import logging
-from isort import file
 
 import pandas as pd
 
 import boto3
 
 from xetra.common.constants import S3FileTypes
+from xetra.common.custom_exceptions import WrongFormatException
 
 
 
@@ -57,8 +57,8 @@ class S3BucketConnector():
         Returns:
             data_frame (DataFrame): Pandas DataFrame containing the csv file 
         """
-        self._logger.info('Reading file %s%s%s', self._endpoint_url, self._bucket.name, key)
-        csv_obj = self._bucket.Obkect(key=key).get().get('Body').read().decode(encoding)
+        self._logger.info('Reading file %s/%s/%s', self._endpoint_url, self._bucket.name, key)
+        csv_obj = self._bucket.Object(key=key).get().get('Body').read().decode(encoding)
         data = StringIO(csv_obj)
         data_frame = pd.read_csv(data, sep = sep)
         
@@ -75,7 +75,7 @@ class S3BucketConnector():
         
         """
         if data_frame.empty:
-            self._logger.info('The dataframe is empty! No file will be written!')
+            self._logger.info('The dataframe is empty! No such file will be written!')
             return None
         if file_format == S3FileTypes.CSV.value:
             out_buffer = StringIO()

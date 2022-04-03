@@ -66,11 +66,11 @@ class TestXetraETLMethods(unittest.TestCase):
             'src_col_max_price':'MaxPrice',
             'src_col_traded_vol': 'TradedVolume'
         }
-        config_dict_trf = {
+        config_dict_trg = {
             'trg_col_isin': 'isin',
             'trg_col_date': 'date',
             'trg_col_op_price':'opening_price_eur',
-            'trg_col_close_price':'closing_price_eur',
+            'trg_col_clos_price':'closing_price_eur',
             'trg_col_min_price':'minimum_price_eur',
             'trg_col_max_price':'maximum_price_eur',
             'trg_col_daily_trad_vol': 'daily_traded_volume',
@@ -80,7 +80,7 @@ class TestXetraETLMethods(unittest.TestCase):
             'trg_format': 'parquet'
         }
         self.source_config = XetraSourceConfig(**config_dict_src)
-        self.target_config = XetraTargetConfig(**config_dict_trf)
+        self.target_config = XetraTargetConfig(**config_dict_trg)
         # creating source files on mocked s3
         columns_src = ['ISIN','Mnemonic','Date','Time','StartPrice','EndPrice','MinPrice','MaxPrice','TradedVolume']
         data = [
@@ -104,15 +104,16 @@ class TestXetraETLMethods(unittest.TestCase):
         self.s3_src_bucket.write_df_to_s3(self.df_src.loc[7:7], '2022-03-19/2022-03-19_BINS_XETR08.csv','csv')
         self.s3_src_bucket.write_df_to_s3(self.df_src.loc[8:8], '2022-03-19/2022-03-19_BINS_XETR09.csv','csv')
         columns_report = ['ISIN','Date','opening_price_eur','closing_price_eur','minimum_price_eur','maximum_price_eur','daily_traded_volume','change_prev_closing_%']
-        data_report = [['AT0000A0E9W5','SANT','2022-03-17',20.21,18.27,18.21,21.34,1088,10.62],
-                       ['AT0000A0E9W5','SANT','2022-03-18',20.58,19.27,18.89,21.14,10286,1.83],
-                       ['AT0000A0E9W5','SANT','2022-03-19',23.58,24.22,22.21,25.01,3586,14.58]]
+        data_report = [['AT0000A0E9W5','2022-03-17',20.21,18.27,18.21,21.34,1088,10.62],
+                       ['AT0000A0E9W5','2022-03-18',20.58,19.27,18.89,21.14,10286,1.83],
+                       ['AT0000A0E9W5','2022-03-19',23.58,24.22,22.21,25.01,3586,14.58]]
         self.df_report = pd.DataFrame(data_report, columns=columns_report)
     
     def tearDown(self):
         """Executing after unit test"""
         # Mocking S3 connection stopped
         self.mock_s3.stop()
+        
     def test_extact_no_files(self):
         """
         Tests the extract method when there are no files to be extracted
@@ -134,13 +135,12 @@ class TestXetraETLMethods(unittest.TestCase):
         #Expected results 
         df_exp = self.df_src.loc[1:8].reset_index(drop=True)
         #Test Init
-        extract_date = '2022-03-25'
-        extract_date_list = ['2022-03-24','2022-03-25','2022-03-26','2022-03-27','2022-03-28']
+        extract_date = '2022-03-17'
+        extract_date_list = ['2022-03-16','2022-03-17','2022-03-18','2022-03-19','2022-03-20']
         # Method execution
-        with patch.object(MetaProcess, 'return_date_list', return_value = [extract_date,extract_date_list]):
+        with patch.object(MetaProcess, 'return_date_list', return_value = [extract_date, extract_date_list]):
             xetra_etl = XetraETL(self.s3_src_bucket, self.s3_trg_bucket, self.meta_key, self.source_config, self.target_config)
             df_result = xetra_etl.extract()
-        # Test after mthod execution
         self.assertTrue(df_exp.equals(df_result))
     
     def test_transform_report1_emptydf(self):
@@ -148,7 +148,7 @@ class TestXetraETLMethods(unittest.TestCase):
         Tests the transform_report1 method with an empty DataFrame as an input argument
         """
         # Expected results 
-        log_exp = 'This dataframe is empty. No transformations will be applied'
+        log_exp = 'The dataframe is empty. No transformations will be applied!'
         # Test init
         extract_date = '2022-03-17'
         extract_date_list = ['2022-03-16','2022-03-17','2022-03-18']
@@ -192,7 +192,7 @@ class TestXetraETLMethods(unittest.TestCase):
         """
         # Expected results 
         log1_exp = 'Xetra target data successfully written.'
-        log2_exp = 'xetra meta file successfully updated.'
+        log2_exp = 'Xetra meta file successfully updated.'
         df_exp =self.df_report
         meta_exp = ['2022-03-17', '2022-03-18', '2022-03-19']
         # Test init 
@@ -200,8 +200,8 @@ class TestXetraETLMethods(unittest.TestCase):
         extract_date_list = ['2022-03-17', '2022-03-18', '2022-03-19']
         df_input = self.df_report
         # Method execution
-        with patch.object(MetaProcess, 'return_date_list', return_values = [extract_date, extract_date_list]):
-            xetra_etl = XetraETL(self.s3_bucket_name_src, self.s3_bucket_name_trg, self.meta_key, self.source_config, self.target_config)
+        with patch.object(MetaProcess, 'return_date_list', return_value = [extract_date, extract_date_list]):
+            xetra_etl = XetraETL(self.s3_src_bucket, self.s3_trg_bucket, self.meta_key, self.source_config, self.target_config)
             with self.assertLogs() as logm:
                 xetra_etl.load(df_input)
                 #Log test after method execution
@@ -239,10 +239,10 @@ class TestXetraETLMethods(unittest.TestCase):
         meta_exp = ['2022-03-17', '2022-03-18', '2022-03-19']
         # Test init 
         extract_date = '2022-03-17'
-        extract_date_list = ['2022-03-17', '2022-03-18', '2022-03-19']
+        extract_date_list = ['2022-03-16','2022-03-17', '2022-03-18', '2022-03-19']
         # Method execution
-        with patch.object(MetaProcess, 'return_date_list', return_values = [extract_date, extract_date_list]):
-            xetra_etl = XetraETL(self.s3_bucket_name_src, self.s3_bucket_name_trg, self.meta_key, self.source_config, self.target_config)
+        with patch.object(MetaProcess, 'return_date_list', return_value = [extract_date, extract_date_list]):
+            xetra_etl = XetraETL(self.s3_src_bucket, self.s3_trg_bucket, self.meta_key, self.source_config, self.target_config)
             xetra_etl.etl_report1()
         # Test after method execution
         trg_file = self.s3_trg_bucket.list_files_in_prefix(self.target_config.trg_key)[0]

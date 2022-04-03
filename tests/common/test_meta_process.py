@@ -1,9 +1,8 @@
 """ Test Meta Process methods"""
 
-from datetime import date, datetime, timedelta
-from io import BytesIO, StringIO
+from datetime import datetime, timedelta
+from io import StringIO
 import os
-from unicodedata import name
 import unittest
 
 import boto3
@@ -88,7 +87,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         """
         # Expected results
         return_exp = True
-        log_exp = ' The dataframe is empty! No such file will be written'
+        log_exp = 'The dataframe is empty! No such file will be written'
         # Test init
         date_list = []
         meta_key = 'meta.csv'
@@ -113,7 +112,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         meta_key = 'meta.csv'
         meta_content = (
             f'{MetaProcessFormat.META_SOURCE_DATE_COL.value},'
-            f'{MetaProcessFormat.META_PROCESS_COL.value},'
+            f'{MetaProcessFormat.META_PROCESS_COL.value}\n'
             f'{date_list_old[0]},'
             f'{datetime.today().strftime(MetaProcessFormat.META_PROCESS_DATE_FORMAT.value)}\n'
             f'{date_list_old[1]},'
@@ -134,7 +133,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         # Cleanup after test
         self.s3_bucket.delete_objects(
             Delete={
-                'Object': [
+                'Objects': [
                     {
                         'Key': meta_key
                     }
@@ -164,7 +163,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         # Cleanup after test
         self.s3_bucket.delete_objects(
             Delete={
-                'Object': [
+                'Objects': [
                     {
                         'Key': meta_key
                     }
@@ -225,7 +224,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         # Cleanup after test
         self.s3_bucket.delete_objects(
             Delete={
-                'Object': [
+                'Objects': [
                     {
                         'Key': meta_key
                     }
@@ -253,7 +252,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         # Cleanup after test
         self.s3_bucket.delete_objects(
             Delete={
-                'Object': [
+                'Objects': [
                     {
                         'Key': meta_key
                     }
@@ -275,7 +274,7 @@ class TestMetaProcessMethods(unittest.TestCase):
             f'{MetaProcessFormat.META_PROCESS_COL.value}\n'
             f'{self.dates[0]}, {self.dates[0]}\n'
             f'{self.dates[1]}, {self.dates[0]}'
-        )     
+        )   
         self.s3_bucket.put_object(Body = meta_content, Key = meta_key)
         first_date = self.dates[0]
         # Method execution
@@ -286,7 +285,7 @@ class TestMetaProcessMethods(unittest.TestCase):
         # Cleanup after test
         self.s3_bucket.delete_objects(
             Delete={
-                'Object': [
+                'Objects': [
                     {
                         'Key': meta_key
                     }

@@ -1,7 +1,7 @@
 """ 
 Xetra ETL Component
 """
-from datetime import date, datetime
+from datetime import datetime
 import logging 
 
 from typing import NamedTuple
@@ -33,7 +33,7 @@ class XetraSourceConfig(NamedTuple):
     src_col_start_price: str
     src_col_min_price: str
     src_col_max_price: str
-    src_col_trade_vol: str
+    src_col_traded_vol: str
     
 class XetraTargetConfig(NamedTuple):
     """
@@ -57,7 +57,7 @@ class XetraTargetConfig(NamedTuple):
     trg_col_clos_price: str
     trg_col_min_price: str
     trg_col_max_price: str
-    trg_daily_traded_volume: str
+    trg_col_daily_trad_vol: str
     trg_col_ch_prev_clos : str
     trg_key: str
     trg_key_date_format: str
@@ -101,7 +101,7 @@ class XetraETL():
             data_frame = pd.DataFrame()
         else:
             data_frame = pd.concat([self.s3_bucket_src.read_csv_to_df(file) for file in files], ignore_index=True)
-        self._logger('Extracting Xetra source files finished')
+        self._logger.info('Extracting Xetra source files finished')
         return data_frame
     
     def transform_report1(self, data_frame: pd.DataFrame):
@@ -115,11 +115,11 @@ class XetraETL():
             data_frame = transformed pandas dataframe
         """
         if data_frame.empty:
-            self._logger.info('The dataframe is empty. No transformations will be applied')
+            self._logger.info('The dataframe is empty. No transformations will be applied!')
             return data_frame
         self._logger.info('Applying transformations to Xetra source data for report 1 started...')
         # Filtering necessary source columns
-        data_frame = data_frame.loc[:self.src_args.src_columns]
+        data_frame = data_frame.loc[:,self.src_args.src_columns]
         # Removing rows with missing values
         data_frame.dropna(inplace = True)
         # Calculating opening price per ISIN and day
@@ -134,7 +134,7 @@ class XetraETL():
         data_frame.rename(columns = {
             self.src_args.src_col_min_price: self.trg_args.trg_col_min_price,
             self.src_args.src_col_max_price: self.trg_args.trg_col_max_price,
-            self.src_args.src_col_trade_vol: self.trg_args.trg_daily_traded_volume,
+            self.src_args.src_col_traded_vol: self.trg_args.trg_col_daily_trad_vol,
         }, inplace = True)
         # Aggregating per ISIN and day -> opening price, closing price, min price, max price, traded volume
         data_frame = data_frame.groupby([
@@ -144,7 +144,7 @@ class XetraETL():
                 self.trg_args.trg_col_clos_price: 'max',
                 self.trg_args.trg_col_min_price: 'min',
                 self.trg_args.trg_col_max_price: 'max',
-                self.trg_args.trg_daily_traded_volume: 'sum',
+                self.trg_args.trg_col_daily_trad_vol: 'sum',
             })
         # % Change of current day's closing price compared to the previous trading day's closing price
         data_frame[self.trg_args.trg_col_ch_prev_clos] = data_frame.sort_values(by=[self.src_args.src_col_date]).groupby([self.src_args.src_col_isin])[self.trg_args.trg_col_op_price].shift(1)
@@ -172,10 +172,10 @@ class XetraETL():
         )
         # Writing to target
         self.s3_bucket_trg.write_df_to_s3(data_frame, target_key, self.trg_args.trg_format)
-        self._logger.info('Xetra target data sucessfully written')
+        self._logger.info('Xetra target data successfully written.')
         # Updating meta file
         MetaProcess.update_meta_file(self.meta_update_list, self.meta_key, self.s3_bucket_trg)
-        self._logger.info('Xetra meta file sucessfully updated')
+        self._logger.info('Xetra meta file successfully updated.')
         return True
     
     def etl_report1(self):

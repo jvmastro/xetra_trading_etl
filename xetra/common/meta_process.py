@@ -5,10 +5,12 @@ Methods for processing the meta file
 import collections
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import pandas as pd
+
 from xetra.common.constants import MetaProcessFormat
 from xetra.common.custom_exceptions import WrongMetaFileException
 from xetra.common.s3 import S3BucketConnector
-import pandas as pd
+
 
 class MetaProcess():
     """
@@ -69,7 +71,7 @@ class MetaProcess():
             dates = [start + timedelta(days=x) for x in range(0, (today - start).days + 1)]
             # Creating set of all dates in meta file
             src_dates = set(pd.to_datetime(df_meta[MetaProcessFormat.META_SOURCE_DATE_COL.value]).dt.date)
-            dates_missing = set(dates[1:] - src_dates) - timedelta(days=1)
+            dates_missing = set(dates[1:]) - src_dates
             if dates_missing:
                 # Determining the earliest date that should be extracted 
                 min_date = min(set(dates[1:]) - src_dates) - timedelta(days=1)
@@ -80,7 +82,7 @@ class MetaProcess():
                 # Setting values for the earliest date and the list of dates 
                 return_dates = []
                 return_min_date = datetime(2200, 1, 1).date().strftime(MetaProcessFormat.META_DATE_FORMAT.value)
-        except s3_bucket_meta.client('s3').exceptions.NoSuchKey:
+        except s3_bucket_meta.session.client('s3').exceptions.NoSuchKey:
             # No meta file found -> creating a date list from first_date - 1 day until today 
             return_min_date = first_date
             return_dates = [
