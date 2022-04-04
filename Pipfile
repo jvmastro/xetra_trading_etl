@@ -4,18 +4,19 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-awscli = "*"
-jupyter = "*"
+pandas = "*"
 boto3 = "*"
 pyarrow = "*"
 pyyaml = "*"
+
+
+[dev-packages]
+awscli = "*"
+jupyter = "*"
 pylint = "*"
 moto = "*"
 coverage = "*"
-pandas = "*"
 autopep8 = "*"
-
-[dev-packages]
 
 [requires]
 python_version = "3.9"
