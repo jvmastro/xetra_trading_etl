@@ -13,6 +13,7 @@ pylint = "*"
 moto = "*"
 coverage = "*"
 pandas = "*"
+autopep8 = "*"
 
 [dev-packages]
 
