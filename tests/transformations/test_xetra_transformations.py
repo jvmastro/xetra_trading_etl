@@ -65,6 +65,7 @@ class TestXetraETLMethods(unittest.TestCase):
             'src_col_isin': 'ISIN',
             'src_col_time': 'Time',
             'src_col_start_price': 'StartPrice',
+            'src_col_end_price': 'EndPrice',
             'src_col_min_price': 'MinPrice',
             'src_col_max_price': 'MaxPrice',
             'src_col_traded_vol': 'TradedVolume'

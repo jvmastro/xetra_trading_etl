@@ -30,6 +30,7 @@ class XetraSourceConfig(NamedTuple):
     src_col_isin: str
     src_col_time: str
     src_col_start_price: str
+    src_col_end_price: str
     src_col_min_price: str
     src_col_max_price: str
     src_col_traded_vol: str
@@ -141,7 +142,7 @@ class XetraETL():
         # Calculating closing price per ISIN and day
         data_frame[self.trg_args.trg_col_clos_price] = data_frame.sort_values(by=[self.src_args.src_col_time]).groupby([
             self.src_args.src_col_isin,
-            self.src_args.src_col_date])[self.src_args.src_col_start_price].transform('last')
+            self.src_args.src_col_date])[self.src_args.src_col_end_price].transform('last')
         # Renaming columns
         data_frame.rename(columns={
             self.src_args.src_col_min_price: self.trg_args.trg_col_min_price,
