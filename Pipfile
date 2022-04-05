@@ -9,7 +9,6 @@ boto3 = "*"
 pyarrow = "*"
 pyyaml = "*"
 
-
 [dev-packages]
 awscli = "*"
 jupyter = "*"
@@ -17,6 +16,8 @@ pylint = "*"
 moto = "*"
 coverage = "*"
 autopep8 = "*"
+memory-profiler = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.9"

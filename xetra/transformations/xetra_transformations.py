@@ -2,6 +2,7 @@
 from datetime import datetime
 import logging
 
+
 from typing import NamedTuple
 import pandas as pd
 from xetra.common.meta_process import MetaProcess
@@ -115,6 +116,7 @@ class XetraETL():
         self._logger.info('Extracting Xetra source files finished')
         return data_frame
 
+
     def transform_report1(self, data_frame: pd.DataFrame):
         """
         Applies the necessary transformations to create report 1
@@ -196,6 +198,7 @@ class XetraETL():
             self.meta_update_list, self.meta_key, self.s3_bucket_trg)
         self._logger.info('Xetra meta file successfully updated.')
         return True
+
 
     def etl_report1(self):
         """
